@@ -56,11 +56,16 @@ supported:
 - **dpr** - device-pixel-ratio (1) - scales requested image dimensions by this multiplier.
 - **fit** - resize fitting mode - can be one of: `fill`, `scale`, `crop`, `clip`, `min`, `max`
 - **fill-color** - used when `fit` is set to `fill` can be a loosely formatted color such as "red" or "rgb(255,0,0)"
-- **crop** - resize fitting mode - can be one of: `focalpoint`, `entropy`, any comma separated combination of `top`, `bottom`, `left` `right`
+- **crop** - resize fitting mode - can be one of: `focalpoint`, `entropy`, any comma separated combination of `top`, `bottom`, `left` `right`, `smart`
 - **fp-x**, **fp-y** - focal point x & y - percentage, 0 to 1 for where to focus on the image when cropping with focalpoint mode
 - **s** - security hash - See security section
 - **auto** - can be a comma separated combination of: `compress`, `format`
 - **blur** - gaussian blur between 0-2000
+
+### `smartcrop`: with smartcrop-sharp
+- adapter module using smartcrop.js.
+- https://github.com/jwagner/smartcrop-sharp
+- e.g. `?fit=crop&crop=smart&w=100&h=450`
 
 ### `auto`: format
 If `auto` includes format, the service will try to determine the ideal format to convert the image to. The rules are:

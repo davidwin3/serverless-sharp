@@ -769,7 +769,8 @@
             "faces",
             "entropy",
             "edges",
-            "focalpoint"
+            "focalpoint",
+            "smart"
           ]
         }
       ],

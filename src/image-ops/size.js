@@ -3,6 +3,7 @@
  */
 
 const sharp = require('sharp')
+const smartcrop = require('smartcrop-sharp')
 
 const NotImplementedException = require('../errors/NotImplementedException')
 
@@ -175,59 +176,78 @@ exports.scaleCrop = async (image, width = null, height = null, crop = null, fpx 
   const newWidth = parseInt(originalWidth * factor)
   const newHeight = parseInt(originalHeight * factor)
 
-  // if we don't have a focal point, default to center-center
-  if (crop.length && crop[0] !== 'focalpoint') {
-    fpx = 0.5
-    fpy = 0.5
-
-    // use position arguments to set focal point, if provided
-    if (crop.includes('left')) {
-      fpx = 0
-    } else if (crop.includes('right')) {
-      fpx = 1
+  if (crop.length && crop[0] === 'smart') {
+    await this.smartCrop(image, width, height)
+  } else {
+    // if we don't have a focal point, default to center-center
+    if (crop.length && crop[0] !== 'focalpoint') {
+      fpx = 0.5
+      fpy = 0.5
+  
+      // use position arguments to set focal point, if provided
+      if (crop.includes('left')) {
+        fpx = 0
+      } else if (crop.includes('right')) {
+        fpx = 1
+      }
+      if (crop.includes('top')) {
+        fpy = 0
+      } else if (crop.includes('bottom')) {
+        fpy = 1
+      }
     }
-    if (crop.includes('top')) {
-      fpy = 0
-    } else if (crop.includes('bottom')) {
-      fpy = 1
+  
+    let fpxLeft = Math.floor((newWidth * fpx) - (0.5 * width))
+    let fpyTop = Math.floor((newHeight * fpy) - (0.5 * height))
+  
+    // ensure extracted region doesn't exceed image bounds
+    if (width > newWidth) {
+      width = newWidth
     }
+    if (height > newHeight) {
+      height = newHeight
+    }
+  
+    // adjust focal point x
+    if (fpxLeft + width > newWidth) {
+      fpxLeft = newWidth - width
+    } else if (fpxLeft < 0) {
+      fpxLeft = 0
+    }
+  
+    // adjust focal point y
+    if (fpyTop + height > newHeight) {
+      fpyTop = newHeight - height
+    } else if (fpyTop < 0) {
+      fpyTop = 0
+    }
+    image.resize({
+      width: newWidth,
+      height: newHeight,
+      withoutEnlargement: false,
+      fit: sharp.fit.fill
+    }).extract({
+      left: fpxLeft,
+      top: fpyTop,
+      width,
+      height
+    })
   }
 
-  let fpxLeft = Math.floor((newWidth * fpx) - (0.5 * width))
-  let fpyTop = Math.floor((newHeight * fpy) - (0.5 * height))
+}
 
-  // ensure extracted region doesn't exceed image bounds
-  if (width > newWidth) {
-    width = newWidth
+exports.smartCrop = async function (image, width = null, height = null) {
+  const buffer = await image.toBuffer()
+  const smartResult = await smartcrop.crop(buffer, { width, height })
+  if (smartResult) {
+    const { topCrop } = smartResult
+    image.extract({ 
+      width: topCrop.width, 
+      height: topCrop.height, 
+      left: topCrop.x, 
+      top: topCrop.y 
+    }).resize(width, height)
   }
-  if (height > newHeight) {
-    height = newHeight
-  }
-
-  // adjust focal point x
-  if (fpxLeft + width > newWidth) {
-    fpxLeft = newWidth - width
-  } else if (fpxLeft < 0) {
-    fpxLeft = 0
-  }
-
-  // adjust focal point y
-  if (fpyTop + height > newHeight) {
-    fpyTop = newHeight - height
-  } else if (fpyTop < 0) {
-    fpyTop = 0
-  }
-  image.resize({
-    width: newWidth,
-    height: newHeight,
-    withoutEnlargement: false,
-    fit: sharp.fit.fill
-  }).extract({
-    left: fpxLeft,
-    top: fpyTop,
-    width,
-    height
-  })
 }
 
 /**
